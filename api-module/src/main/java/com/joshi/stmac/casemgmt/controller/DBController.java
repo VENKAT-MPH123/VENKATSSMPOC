@@ -15,10 +15,10 @@ public class DBController {
 
     @RequestMapping("/save")
     public String process(){
-        repository.save(new CaseManagementModel("105","Unassigned","Mphasis", "Mph"));
-        repository.save(new CaseManagementModel("106","Assigned","Mphasis", "WF"));
-        repository.save(new CaseManagementModel("109","Accepted","Mphasis", "JPMC"));
-        repository.save(new CaseManagementModel("110","Deny","Mphasis", "CS"));
+        repository.save(new CaseManagementModel("105","Unassigned","Mphasis", "Mph","Requester"));
+        repository.save(new CaseManagementModel("106","Assigned","Mphasis", "WF","Dispatcher"));
+        repository.save(new CaseManagementModel("109","Accepted","Mphasis", "JPMC","Case Worker"));
+        repository.save(new CaseManagementModel("110","Deny","Mphasis", "CS","Manager"));
 
         return "Done";
     }
