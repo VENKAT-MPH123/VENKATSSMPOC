@@ -16,17 +16,21 @@ public class CaseManagementModel {
     public String legalCompanyName;
     @Column(name = "accountName")
     public String accountName;
+    @Column(name = "caseState")
     public String caseState;
+    @Column(name = "userRole")
+    public String userRole;
 
-    //second model: Userrole,state,timestamp
+
     public CaseManagementModel() {
     }
 
-    public CaseManagementModel(String caseId, String caseState, String legalCompanyName, String accountName) {
+    public CaseManagementModel(String caseId, String caseState, String legalCompanyName, String accountName,String userRole) {
         this.caseId = caseId;
         this.caseState=caseState;
         this.legalCompanyName = legalCompanyName;
         this.accountName = accountName;
+        this.userRole=userRole;
     }
 
     public String getLegalCompanyName() {
@@ -61,8 +65,16 @@ public class CaseManagementModel {
         this.caseId = caseId;
     }
 
+    public String getUserRole() {
+        return userRole;
+    }
+
+    public void setUserRole(String userRole) {
+        this.userRole = userRole;
+    }
+
     @Override
     public String toString() {
-        return String.format("Case[caseId=%s,caseState=%s, legalCompanyName='%s', accountName='%s']", caseId,caseState, legalCompanyName, accountName);
+        return String.format("Case[caseId=%s,caseState=%s, legalCompanyName='%s', accountName='%s',userRole='%s']", caseId,caseState, legalCompanyName, accountName,userRole);
     }
 }
