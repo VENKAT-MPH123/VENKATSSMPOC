@@ -1,0 +1,10 @@
+package com.joshi.stmac.casemgmt.repository;
+
+import com.joshi.stmac.casemgmt.model.CaseManagementModel;
+import org.springframework.data.repository.CrudRepository;
+
+
+public interface CaseRepository extends CrudRepository<CaseManagementModel, String>{
+    // List<CaseManagementModel> findByCaseId(String caseId);
+ }
+
