@@ -1,0 +1,39 @@
+package com.joshi.stmac.casemgmt.model;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.joshi.stmac.casemgmt.repository.CaseManagementDao;
+import com.joshi.stmac.casemgmt.repository.CaseManagementDaoImpl;
+import com.joshi.stmac.casemgmt.repository.CaseRepository;
+
+@Service
+public class CaseMgmtMapper {
+	
+	private static final Logger logger = LogManager.getLogger(CaseMgmtMapper.class);
+
+	CaseManagementDao caseManagementDao = new CaseManagementDaoImpl();
+	
+	@Autowired
+	CaseResponseObj caseResponseObj;
+	
+	public boolean caseDetailsStore(CaseRequestObj obj, CaseRepository repository) {
+		logger.info("Entering caseDetailsStore :: CaseMgmtMapper");
+		boolean flag = caseManagementDao.caseDeailsSave(obj, repository);
+		return flag;
+	}
+	
+	public CaseManagementModel getRequiredCase(int caseId, CaseRepository repository) {
+		logger.info("Entering getRequiredCase :: CaseMgmtMapper");
+		CaseManagementModel caseManagementModel = caseManagementDao.findByCaseID(caseId, repository);
+		return caseManagementModel;
+	}
+	
+	
+	public void updateCaseStateandRole(int caseId, String state, String role, CaseRepository repository) {
+		logger.info("Entering updateCaseStateandRole :: CaseMgmtMapper");
+		caseManagementDao.updateCaseInfo(caseId, state, role, repository);
+	}
+}
