@@ -8,6 +8,8 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.joshi.stmac.casemgmt.repository.CaseRepository;
+
 
 @Service
 public class CaseStoreService {
@@ -18,16 +20,19 @@ public class CaseStoreService {
 	@Autowired
 	CaseResponseObj caseResponseObj;
 	
+	@Autowired
+	CaseMgmtMapper caseMgmtMapper;
+	
 	public CaseRequestObj caseStoreProcess(CaseRequestObj obj) {
 		logger.info("Entering caseStoreProcess :: CaseStoreService");
 		if (obj.getLegalCompanyName() != null && obj.getAccountName() != null) {
-			if(reqObjMap.size() == 0) {
+			if (reqObjMap.size() == 0) {
 				obj.setCaseNumber(1);
 				reqObjMap.put(1, obj);
 			} else {
 				int i = reqObjMap.size();
-				obj.setCaseNumber(i+1);
-				reqObjMap.put(i+1, obj);
+				obj.setCaseNumber(i + 1);
+				reqObjMap.put(i + 1, obj);
 				caseResponseObj.setStatus("New Case created");
 			}
 		} else {
@@ -37,6 +42,11 @@ public class CaseStoreService {
 			obj.setState("Invalid Data");
 		}
 		return obj;
+	}
+	
+	public boolean casePersistanceStoreProcess(CaseRequestObj obj, CaseRepository repository) {
+		boolean flag = caseMgmtMapper.caseDetailsStore(obj, repository);
+		return flag;
 	}
 	
 	public void updateStateStatus(CaseRequestObj obj, String state, String role) {
@@ -49,7 +59,7 @@ public class CaseStoreService {
 	
 	public CaseResponseObj getTheCase(CaseRequestObj obj) {
 		logger.info("Entering getTheCase :: CaseStoreService");
-		if(reqObjMap.containsKey(obj.getCaseNumber())) {
+		if (reqObjMap.containsKey(obj.getCaseNumber())) {
 			obj = reqObjMap.get(obj.getCaseNumber());
 			caseResponseObj.setLegalCompanyName(obj.getLegalCompanyName());
 			caseResponseObj.setAccountName(obj.getAccountName());
@@ -62,7 +72,38 @@ public class CaseStoreService {
 			caseResponseObj.setCaseNumber(0);
 			caseResponseObj.setStatus("No Case Found");
 		}
+
 		return caseResponseObj;
+	}
+	
+	public CaseResponseObj getTheCasePersistance(int caseId, CaseRepository repository)
+	{
+		logger.info("Entering getMyCase :: CaseStoreService");
+		CaseManagementModel caseManagementModel = null;
+		try {
+			caseManagementModel = caseMgmtMapper.getRequiredCase(caseId, repository);
+			int i = Integer.valueOf(caseManagementModel.getCaseId());
+			caseResponseObj.setCaseNumber(i);
+			caseResponseObj.setLegalCompanyName(caseManagementModel.getLegalCompanyName());
+			caseResponseObj.setAccountName(caseManagementModel.getAccountName());
+			caseResponseObj.setRole(caseManagementModel.getUserRole());
+			caseResponseObj.setState(caseManagementModel.getCaseState());
+			caseResponseObj.setStatus("Case Created succeesfully");
+		} catch (Exception e) {
+			caseResponseObj.setCaseNumber(0);
+			caseResponseObj.setLegalCompanyName("");
+			caseResponseObj.setAccountName("");
+			caseResponseObj.setRole("");
+			caseResponseObj.setState("");
+			caseResponseObj.setStatus("Problem while creating case");
+			e.printStackTrace();
+		}
+		return caseResponseObj;
+	}
+	
+	public void updateStateStatusPersistance(CaseRequestObj obj, String state, String role, CaseRepository repository) {
+		logger.info("Entering updateStateStatusPersistance :: CaseStoreService");
+		caseMgmtMapper.updateCaseStateandRole(obj.getCaseNumber(), state, role, repository);
 	}
 	
 	public Map getAllCases() {
