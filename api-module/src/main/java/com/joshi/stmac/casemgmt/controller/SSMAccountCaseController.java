@@ -1,10 +1,8 @@
 package com.joshi.stmac.casemgmt.controller;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import com.joshi.stmac.casemgmt.utils.SchedulerTask;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +21,7 @@ import com.joshi.stmac.casemgmt.model.CaseRequestObj;
 import com.joshi.stmac.casemgmt.model.CaseResponseObj;
 import com.joshi.stmac.casemgmt.model.CaseStoreService;
 import com.joshi.stmac.casemgmt.model.Roles;
+import com.joshi.stmac.casemgmt.repository.CaseRepository;
 
 
 @RestController
@@ -46,6 +45,9 @@ public class SSMAccountCaseController {
 	@Autowired
 	Roles roles;
 	
+	@Autowired
+    CaseRepository repository;
+	
 //	StateMachine<CaseStates, CaseEvents> stateMachine;
 	
 	List resObjList = new ArrayList();
@@ -56,117 +58,57 @@ public class SSMAccountCaseController {
 	
 	
 	@RequestMapping(method=RequestMethod.POST, value="mph")
-	public List processOfCreatingCase(@RequestBody CaseRequestObj obj, @RequestHeader ("role") String role) {
+	public List processOfCreatingCase(@RequestBody CaseRequestObj obj, @RequestHeader("role") String role) {
 		logger.info("Entering processOfCreatingCase :: APICasesController");
 		if (role.equals(roles.requester)) {
 			obj = caseStoreService.caseStoreProcess(obj);
 			if (obj != null) {
-				StateMachine<CaseStates, CaseEvents> stateMachine = stateMachineFactory.getStateMachine(String.valueOf(caseResponseObj.getCaseNumber()));
+				StateMachine<CaseStates, CaseEvents> stateMachine = stateMachineFactory
+						.getStateMachine(String.valueOf(caseResponseObj.getCaseNumber()));
 				smMap.put(obj.getCaseNumber(), stateMachine);
 				obj.setState(stateMachine.getState().getId().toString());
 				smMap.put(caseResponseObj.getCaseNumber(), stateMachine);
 			}
-		obj.setRole(roles.requester);
+			obj.setRole(roles.requester);
 		} else {
 			obj.setState("Invalid Role");
 			obj.setRole("");
 		}
-		resObjList.add(obj);
+		boolean flag = caseStoreService.casePersistanceStoreProcess(obj, repository);
+		if (flag == true) {
+			resObjList.add(obj);
+		} else {
+			obj.setLegalCompanyName("");
+			obj.setAccountName("");
+			obj.setCaseNumber(0);
+			obj.setRole("");
+			obj.setState("Unable to create the record");
+			resObjList.add(obj);
+		}
 		return resObjList;
 	}
 	
+	
+	
 	@RequestMapping(method=RequestMethod.POST, value="mph/assignCase")
-	public CaseResponseObj processOfAssignCase(@RequestBody CaseRequestObj obj, @RequestHeader ("role") String role) {
+	public CaseResponseObj processOfAssignCase(@RequestBody CaseRequestObj obj, @RequestHeader("role") String role) {
 		logger.info("Entering processOfAssignCase :: APICasesController");
 		if (role.equals(roles.dispatcher)) {
 			caseResponseObj = caseStoreService.getTheCase(obj);
-			if(caseResponseObj.getStatus().equals("Case Found")) {
-				StateMachine<CaseStates, CaseEvents> stateMachine =(StateMachine) smMap.get(caseResponseObj.getCaseNumber());
+			if (caseResponseObj.getStatus().equals("Case Found")) {
+				StateMachine<CaseStates, CaseEvents> stateMachine = (StateMachine) smMap
+						.get(caseResponseObj.getCaseNumber());
 				if (stateMachine.getState().getId().toString().equals("UNASSIGNED")) {
 					stateMachine.sendEvent(CaseEvents.ASSIGN);
 					caseResponseObj.setState(stateMachine.getState().getId().toString());
-					caseStoreService.updateStateStatus(obj, stateMachine.getState().getId().toString(), role);
-					caseResponseObj.setRole(roles.dispatcher);
+					caseStoreService.updateStateStatusPersistance(obj, stateMachine.getState().getId().toString(), role,
+							repository);
+					caseResponseObj = caseStoreService.getTheCasePersistance(obj.getCaseNumber(), repository);
 				} else {
 					caseResponseObj.setState("Invalid WorkFlow");
 					obj.setRole("");
 				}
-			}
-		} else {
-			caseResponseObj.setState("Invalid Role");
-			obj.setRole("");
-		}
-		return caseResponseObj;
-		
-	}
-	
-	@RequestMapping(method=RequestMethod.POST, value="mph/reassignCase")
-	public CaseResponseObj processOfReassignCase(@RequestBody CaseRequestObj obj, @RequestHeader ("role") String role) {
-		logger.info("Entering processOfAssignCase :: APICasesController");
-		if (role.equals(roles.manager)) {
-			caseResponseObj = caseStoreService.getTheCase(obj);
-			if(caseResponseObj.getStatus().equals("Case Found")) {
-				StateMachine<CaseStates, CaseEvents> stateMachine =(StateMachine) smMap.get(caseResponseObj.getCaseNumber());
-				if (stateMachine.getState().getId().toString().equals("ASSIGNED")) {
-			//		stateMachine.sendEvent(CaseEvents.ASSIGN);
-					caseResponseObj.setState(stateMachine.getState().getId().toString());
-					caseStoreService.updateStateStatus(obj, stateMachine.getState().getId().toString(),role);
-					caseResponseObj.setRole(roles.manager);
-				} else {
-					caseResponseObj.setState("Invalid WorkFlow");
-					obj.setRole("");
-				}
-			}
-		} else {
-			caseResponseObj.setState("Invalid Role");
-			obj.setRole("");
-		}
-		return caseResponseObj;
-		
-	}
-	
-	@RequestMapping(method=RequestMethod.POST, value="mph/acceptCase")
-	public CaseResponseObj processOfAcceptCase(@RequestBody CaseRequestObj obj, @RequestHeader ("role") String role) {
-		logger.info("Entering processOfAcceptCase :: APICasesController");
-		if (role.equals(roles.case_worker)) {
-			caseResponseObj = caseStoreService.getTheCase(obj);
-			if(caseResponseObj.getStatus().equals("Case Found")) {
-				//	StateMachine<CaseStates, CaseEvents> stateMachine = stateMachineFactory.getStateMachine(String.valueOf(caseResponseObj.getCaseNumber()));
-				StateMachine<CaseStates, CaseEvents> stateMachine =(StateMachine) smMap.get(caseResponseObj.getCaseNumber());
-				if (stateMachine.getState().getId().toString().equals("ASSIGNED")) {
-					stateMachine.sendEvent(CaseEvents.ACCEPT);
-					caseResponseObj.setState(stateMachine.getState().getId().toString());
-					caseStoreService.updateStateStatus(obj, stateMachine.getState().getId().toString(),role);
-					caseResponseObj.setRole(roles.case_worker);
-				} else {
-					caseResponseObj.setState("Invalid WorkFlow");
-					obj.setRole("");
-				}
-			}
-		} else {
-			caseResponseObj.setState("Invalid Role");
-			obj.setRole("");
-		}
-		return caseResponseObj;
-		
-	}
-	
-	@RequestMapping(method=RequestMethod.POST, value="mph/denyCase")
-	public CaseResponseObj processOfDenyCase(@RequestBody CaseRequestObj obj, @RequestHeader ("role") String role) {
-		logger.info("Entering processOfAcceptCase :: APICasesController");
-		if (role.equals(roles.case_worker)) {
-			caseResponseObj = caseStoreService.getTheCase(obj);
-			if(caseResponseObj.getStatus().equals("Case Found")) {
-				StateMachine<CaseStates, CaseEvents> stateMachine =(StateMachine) smMap.get(caseResponseObj.getCaseNumber());
-				if (stateMachine.getState().getId().toString().equals("ASSIGNED")) {
-					stateMachine.sendEvent(CaseEvents.DENY);
-					caseResponseObj.setState(stateMachine.getState().getId().toString());
-					caseStoreService.updateStateStatus(obj, stateMachine.getState().getId().toString(),role);
-					caseResponseObj.setRole(roles.case_worker);
-				}else {
-					caseResponseObj.setState("Invalid WorkFlow");
-					obj.setRole("");
-				}
+				logger.info("Calling escalate case");
 				
 			}
 		} else {
@@ -174,7 +116,85 @@ public class SSMAccountCaseController {
 			obj.setRole("");
 		}
 		return caseResponseObj;
-		
+	}
+	
+	@RequestMapping(method=RequestMethod.POST, value="mph/reassignCase")
+	public CaseResponseObj processOfReassignCase(@RequestBody CaseRequestObj obj, @RequestHeader("role") String role) {
+		logger.info("Entering processOfAssignCase :: APICasesController");
+		if (role.equals(roles.manager)) {
+			caseResponseObj = caseStoreService.getTheCase(obj);
+			if (caseResponseObj.getStatus().equals("Case Found")) {
+				StateMachine<CaseStates, CaseEvents> stateMachine = (StateMachine) smMap
+						.get(caseResponseObj.getCaseNumber());
+				if (stateMachine.getState().getId().toString().equals("ASSIGNED")) {
+					caseResponseObj.setState(stateMachine.getState().getId().toString());
+					caseStoreService.updateStateStatusPersistance(obj, stateMachine.getState().getId().toString(), role,
+							repository);
+					caseResponseObj = caseStoreService.getTheCasePersistance(obj.getCaseNumber(), repository);
+				} else {
+					caseResponseObj.setState("Invalid WorkFlow");
+					obj.setRole("");
+				}
+			}
+		} else {
+			caseResponseObj.setState("Invalid Role");
+			obj.setRole("");
+		}
+		return caseResponseObj;
+	}
+	
+	@RequestMapping(method=RequestMethod.POST, value="mph/acceptCase")
+	public CaseResponseObj processOfAcceptCase(@RequestBody CaseRequestObj obj, @RequestHeader("role") String role) {
+		logger.info("Entering processOfAcceptCase :: APICasesController");
+		if (role.equals(roles.case_worker)) {
+			caseResponseObj = caseStoreService.getTheCase(obj);
+			if (caseResponseObj.getStatus().equals("Case Found")) {
+				StateMachine<CaseStates, CaseEvents> stateMachine = (StateMachine) smMap
+						.get(caseResponseObj.getCaseNumber());
+				if (stateMachine.getState().getId().toString().equals("ASSIGNED")) {
+					stateMachine.sendEvent(CaseEvents.ACCEPT);
+					caseResponseObj.setState(stateMachine.getState().getId().toString());
+					caseStoreService.updateStateStatusPersistance(obj, stateMachine.getState().getId().toString(), role,
+							repository);
+					caseResponseObj = caseStoreService.getTheCasePersistance(obj.getCaseNumber(), repository);
+				} else {
+					caseResponseObj.setState("Invalid WorkFlow");
+					obj.setRole("");
+				}
+			}
+		} else {
+			caseResponseObj.setState("Invalid Role");
+			obj.setRole("");
+		}
+		return caseResponseObj;
+
+	}
+	
+	@RequestMapping(method=RequestMethod.POST, value="mph/denyCase")
+	public CaseResponseObj processOfDenyCase(@RequestBody CaseRequestObj obj, @RequestHeader("role") String role) {
+		logger.info("Entering processOfAcceptCase :: APICasesController");
+		if (role.equals(roles.case_worker)) {
+			caseResponseObj = caseStoreService.getTheCase(obj);
+			if (caseResponseObj.getStatus().equals("Case Found")) {
+				StateMachine<CaseStates, CaseEvents> stateMachine = (StateMachine) smMap
+						.get(caseResponseObj.getCaseNumber());
+				if (stateMachine.getState().getId().toString().equals("ASSIGNED")) {
+					stateMachine.sendEvent(CaseEvents.DENY);
+					caseResponseObj.setState(stateMachine.getState().getId().toString());
+					caseStoreService.updateStateStatusPersistance(obj, stateMachine.getState().getId().toString(), role,
+							repository);
+					caseResponseObj = caseStoreService.getTheCasePersistance(obj.getCaseNumber(), repository);
+				} else {
+					caseResponseObj.setState("Invalid WorkFlow");
+					obj.setRole("");
+				}
+			}
+		} else {
+			caseResponseObj.setState("Invalid Role");
+			obj.setRole("");
+		}
+		return caseResponseObj;
+
 	}
 	
 	@RequestMapping(method=RequestMethod.GET,value="mph")
