@@ -1,0 +1,11 @@
+package com.joshi.stmac.casemgmt.repository;
+
+import com.joshi.stmac.casemgmt.model.CaseManagementModel;
+import com.joshi.stmac.casemgmt.model.CaseRequestObj;
+import com.joshi.stmac.casemgmt.model.CaseResponseObj;
+
+public interface CaseManagementDao {
+   public boolean caseDeailsSave(CaseRequestObj obj, CaseRepository repository);
+   public CaseManagementModel findByCaseID(int caseId, CaseRepository repository);
+   public void updateCaseInfo(int caseID, String state, String role, CaseRepository repository);
+}
