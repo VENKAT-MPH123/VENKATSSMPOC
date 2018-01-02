@@ -12,25 +12,25 @@ import javax.persistence.Table;
 public class CaseManagementModel {
     @Id
     public String caseId;
-    @Column(name = "legalCompanyName")
+    @Column(name = "Legal_Company_Name")
     public String legalCompanyName;
-    @Column(name = "accountName")
+    @Column(name = "Account_Name")
     public String accountName;
-    @Column(name = "caseState")
+    @Column(name = "Case_State")
     public String caseState;
-    @Column(name = "userRole")
+    @Column(name = "User_Role")
     public String userRole;
 
-
+    
     public CaseManagementModel() {
     }
 
-    public CaseManagementModel(String caseId, String caseState, String legalCompanyName, String accountName,String userRole) {
+    public CaseManagementModel(String caseId, String legalCompanyName, String accountName, String caseState, String userRole) {
         this.caseId = caseId;
         this.caseState=caseState;
         this.legalCompanyName = legalCompanyName;
         this.accountName = accountName;
-        this.userRole=userRole;
+        this.userRole = userRole;
     }
 
     public String getLegalCompanyName() {
@@ -64,17 +64,20 @@ public class CaseManagementModel {
     public void setCaseId(String caseId) {
         this.caseId = caseId;
     }
-
+    
     public String getUserRole() {
-        return userRole;
-    }
+		return userRole;
+	}
 
-    public void setUserRole(String userRole) {
-        this.userRole = userRole;
-    }
+	public void setUserRole(String userRole) {
+		this.userRole = userRole;
+	}
 
-    @Override
-    public String toString() {
-        return String.format("Case[caseId=%s,caseState=%s, legalCompanyName='%s', accountName='%s',userRole='%s']", caseId,caseState, legalCompanyName, accountName,userRole);
-    }
+	@Override
+	public String toString() {
+		return "CaseManagementModel [caseId=" + caseId + ", legalCompanyName=" + legalCompanyName + ", accountName="
+				+ accountName + ", caseState=" + caseState + ", userRole=" + userRole + "]";
+	}
+
+	
 }
