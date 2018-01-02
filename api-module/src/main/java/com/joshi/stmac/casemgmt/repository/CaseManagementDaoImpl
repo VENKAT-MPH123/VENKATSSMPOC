@@ -1,0 +1,61 @@
+package com.joshi.stmac.casemgmt.repository;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.joshi.stmac.casemgmt.model.CaseManagementModel;
+import com.joshi.stmac.casemgmt.repository.CaseRepository;
+
+import com.joshi.stmac.casemgmt.model.CaseRequestObj;
+import com.joshi.stmac.casemgmt.model.CaseResponseObj;
+
+@Service
+public class CaseManagementDaoImpl implements CaseManagementDao{
+
+	private static final Logger logger = LogManager.getLogger(CaseManagementDaoImpl.class);
+	
+	@Autowired
+	CaseResponseObj caseResponseObj;
+	
+	CaseManagementModel caseManamgementModel;
+	
+	boolean flag = false;
+	
+	
+	@Override
+	public boolean caseDeailsSave(CaseRequestObj obj, CaseRepository repository) {
+		logger.info("Entering caseDeailsSave :: CaseManagementDaoImpl");
+		try {
+			String caseNumberStr = String.valueOf(obj.getCaseNumber());
+			repository.save(new CaseManagementModel(caseNumberStr,obj.getLegalCompanyName(),obj.getAccountName(), obj.getState(), obj.getRole()));
+			flag = true;
+		} catch (Exception e) {
+			flag = false;
+			e.printStackTrace();
+		}
+		return flag;
+	}
+	
+	public CaseManagementModel findByCaseID(int caseId, CaseRepository repository) {
+		logger.info("Entering findByCaseID :: CaseManagementDaoImpl");
+		try {
+			String str = Integer.toString(caseId);
+			caseManamgementModel =repository.findOne(str);
+		} catch ( Exception e) {
+			e.printStackTrace();
+		}
+		
+		return caseManamgementModel;
+	}
+	
+	public void updateCaseInfo(int caseID, String state, String role, CaseRepository repository) {
+		logger.info("Entering updateCaseInfo :: CaseManagementDaoImpl");
+		caseManamgementModel =repository.findOne(Integer.toString(caseID));
+		caseManamgementModel.setCaseState(state);
+		caseManamgementModel.setUserRole(role);
+		repository.save(caseManamgementModel);
+	}
+
+}
